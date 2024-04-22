@@ -11,6 +11,9 @@ from pyrqa.metric import EuclideanMetric
 from pyrqa.computation import RQAComputation
 from pyrqa.image_generator import ImageGenerator
 from pyrqa.computation import RPComputation
+from PIL import Image
+from numpy import asarray
+import matplotlib.dates as mdates
 
 
 #choix du symbole de l'action à analyser 
@@ -137,7 +140,7 @@ settings = Settings(time_series=ts,
 computation = RPComputation.create(settings)
 result = computation.run()
 ImageGenerator.save_recurrence_plot(result.recurrence_matrix_reverse,
-                                    'RQAsin_sin.png')
+                                    'recurrence_plot.png')
 
 
 
@@ -149,3 +152,37 @@ result.min_vertical_line_length = 2
 result.min_white_vertical_line_length = 2
 print(result)
 
+#ajout des axes sur le diagramme de récrurrence
+def mettre_axe(path_image_png,time_series) :
+    image = Image.open(path_image_png)
+    numpydata = asarray(image)
+    parse_dates = []
+    for i in time_series:
+        original_date = dt.datetime.strptime(i, "%Y-%m-%dT%H:%M:%S.%f000")
+        formatted_Date = original_date.strftime("%Y-%m-%d")
+
+        parse_dates.append(formatted_Date)
+
+    parse_dates = mdates.date2num(parse_dates)
+    fig, ax = plt.subplots()
+    ax.imshow(numpydata, extent= [parse_dates[0],parse_dates[-1],parse_dates[0],parse_dates[-1]])
+    ax.xaxis_date()
+    ax.yaxis_date()
+    date_format = mdates.DateFormatter('%Y-%m-%d')
+    ax.xaxis.set_major_formatter(date_format)
+    fig.autofmt_xdate()
+    ax.yaxis.set_major_formatter(date_format)
+    plt.xlabel('Temps [AAAA-MM-JJ]',fontsize = 21)
+    plt.ylabel('Temps [AAAA-MM-JJ]', fontsize = 21)
+    plt.tick_params(axis = 'both', which = 'both', direction = 'in', length = 6)
+    plt.xticks(fontsize = 10)
+    plt.yticks(fontsize = 10)
+    plt.show()
+
+x_lims = list(map(dt.datetime.fromtimestamp, [982376726, 982377321]))
+time_series = []
+for i in closing_prices.index.to_numpy():
+    time_series.append(str(i))
+
+
+mettre_axe('recurrence_plot.png', time_series)
